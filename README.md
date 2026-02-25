@@ -1,30 +1,51 @@
 # khipu-mcp
 
-MCP (Model Context Protocol) server for the [Khipu](https://khipu.com) Instant Payments API v3.0.
+Servidor MCP para integrar la [API de Pagos Instantáneos de Khipu v3.0](https://khipu.com) en proyectos web.
 
-Allows AI assistants (Claude, Cursor, etc.) to query Khipu API documentation and — when an API key is provided — interact with the real Khipu API to create payments, check statuses, issue refunds, and more.
+Permite que tu asistente de IA (Claude, Cursor, Windsurf, etc.) conozca la API de Khipu en profundidad: puede consultar endpoints, schemas y parámetros mientras te ayuda a escribir el código de integración, sin necesidad de tener una API key.
 
-## Dual mode
+## ¿Para qué sirve?
 
-| Mode | Requirement | Available tools |
-|------|-------------|-----------------|
-| Documentation only | No API key needed | 5 docs tools |
-| Full API access | `KHIPU_API_KEY` set | 5 docs tools + 8 API tools |
+El caso de uso principal es **integrar Khipu en tu aplicación web**. En lugar de ir y venir entre la documentación y tu editor, el asistente tiene acceso directo a la spec completa:
+
+- "¿Qué parámetros acepta `POST /v3/payments`?"
+- "¿Cómo se ve el objeto que devuelve al crear un pago?"
+- "¿Qué significa el campo `status_detail`?"
+- "Implementa el flujo de pago en mi app Next.js usando Khipu"
+
+Con API key también puede hacer llamadas reales: crear pagos de prueba, consultar estados, probar reembolsos.
+
+## Modos de operación
+
+| Modo | Requisito | Herramientas disponibles |
+|------|-----------|--------------------------|
+| Documentación | Sin API key | Consulta de endpoints, schemas y búsqueda en la spec |
+| API completa | `KHIPU_API_KEY` | Todo lo anterior + llamadas reales a la API |
 
 ---
 
-## Installation
+## Instalación
 
-### Option 1 — Claude Desktop / Cursor (with API key)
+### Claude Code
 
-Add to your MCP configuration file:
+```bash
+# Solo documentación (recomendado para desarrollo)
+claude mcp add khipu -- npx -y khipu-mcp --scope user
+
+# Con acceso a la API real
+claude mcp add khipu -e KHIPU_API_KEY=tu-api-key -- npx -y khipu-mcp --scope user
+```
+
+### Claude Desktop
+
+Edita `%APPDATA%\Claude\claude_desktop_config.json` (Windows) o `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
 
 ```json
 {
   "mcpServers": {
     "khipu": {
       "command": "npx",
-      "args": ["khipu-mcp"],
+      "args": ["-y", "khipu-mcp"],
       "env": {
         "KHIPU_API_KEY": "tu-api-key-de-khipu"
       }
@@ -33,83 +54,73 @@ Add to your MCP configuration file:
 }
 ```
 
-### Option 2 — Documentation only (no API key)
+### Cursor / Windsurf
+
+Agrega en `.cursor/mcp.json` o `.windsurf/mcp.json` de tu proyecto:
 
 ```json
 {
   "mcpServers": {
     "khipu": {
       "command": "npx",
-      "args": ["khipu-mcp"]
+      "args": ["-y", "khipu-mcp"]
     }
   }
 }
 ```
 
-**Config file locations:**
-- Claude Desktop (macOS): `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Claude Desktop (Windows): `%APPDATA%\Claude\claude_desktop_config.json`
-- Cursor: `.cursor/mcp.json` in your project or `~/.cursor/mcp.json` globally
+---
+
+## Herramientas disponibles
+
+### Documentación (siempre disponibles)
+
+| Herramienta | Descripción |
+|-------------|-------------|
+| `khipu_get_overview` | Descripción general, URL base, autenticación y lista de endpoints |
+| `khipu_list_endpoints` | Todos los endpoints con método HTTP, path y resumen |
+| `khipu_get_endpoint` | Detalles completos de un endpoint: parámetros, body, responses y schemas |
+| `khipu_get_schema` | Definición de un schema por nombre (ej: `payment-post-payment`) |
+| `khipu_search_docs` | Búsqueda libre en toda la especificación OpenAPI |
+
+### API real (requieren `KHIPU_API_KEY`)
+
+| Herramienta | Endpoint | Descripción |
+|-------------|----------|-------------|
+| `khipu_get_banks` | `GET /v3/banks` | Lista los bancos disponibles con límites y logos |
+| `khipu_create_payment` | `POST /v3/payments` | Crea un pago y obtiene las URLs de redirección |
+| `khipu_get_payment` | `GET /v3/payments/{id}` | Estado completo e información de un pago |
+| `khipu_delete_payment` | `DELETE /v3/payments/{id}` | Elimina un pago pendiente |
+| `khipu_confirm_payment` | `POST /v3/payments/{id}/confirm` | Confirma un pago (función especial, contactar a Khipu) |
+| `khipu_refund_payment` | `POST /v3/payments/{id}/refunds` | Reembolso total o parcial |
+| `khipu_predict_payment` | `GET /v3/predict` | Predicción ML del resultado del pago |
+| `khipu_get_payment_methods` | `GET /v3/merchants/{id}/paymentMethods` | Métodos de pago disponibles para un comercio |
 
 ---
 
-## Available tools
+## Ejemplo de uso
 
-### Documentation tools (always available)
+Una vez instalado, puedes pedirle directamente a tu asistente:
 
-| Tool | Description |
-|------|-------------|
-| `khipu_get_overview` | API description, base URL, authentication, endpoint list |
-| `khipu_list_endpoints` | All endpoints with method, path, and summary |
-| `khipu_get_endpoint` | Full details for one endpoint: params, request body, responses |
-| `khipu_get_schema` | Definition of a schema by name (e.g. `payment-post-payment`) |
-| `khipu_search_docs` | Free-text search across the entire API specification |
-
-### API tools (require `KHIPU_API_KEY`)
-
-| Tool | Endpoint | Description |
-|------|----------|-------------|
-| `khipu_get_banks` | `GET /v3/banks` | List available banks |
-| `khipu_create_payment` | `POST /v3/payments` | Create a payment, get redirect URLs |
-| `khipu_get_payment` | `GET /v3/payments/{id}` | Full payment status and details |
-| `khipu_delete_payment` | `DELETE /v3/payments/{id}` | Delete a pending payment |
-| `khipu_confirm_payment` | `POST /v3/payments/{id}/confirm` | Confirm payment (special feature) |
-| `khipu_refund_payment` | `POST /v3/payments/{id}/refunds` | Full or partial refund |
-| `khipu_predict_payment` | `GET /v3/predict` | ML prediction of payment success |
-| `khipu_get_payment_methods` | `GET /v3/merchants/{id}/paymentMethods` | Payment methods for a merchant |
-
----
-
-## Authentication
-
-Khipu uses API key authentication. Pass your key in the `KHIPU_API_KEY` environment variable. The server forwards it as the `x-api-key` HTTP header on every API call.
-
-Get your API key from the [Khipu merchant dashboard](https://khipu.com).
-
----
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Build TypeScript
-npm run build
-
-# Run the server
-npm start
-
-# Watch mode during development
-npm run dev
+```
+Integra Khipu en mi app Next.js. Necesito un botón de pago que
+llame a la API y redirija al usuario a la URL de pago.
 ```
 
-### Requirements
-
-- Node.js >= 18 (uses native `fetch`)
+El asistente consultará la spec, entenderá los parámetros requeridos y escribirá el código correcto sin alucinaciones sobre la API.
 
 ---
 
-## License
+## Autenticación
+
+Khipu usa autenticación por API key mediante el header `x-api-key`. Obtén tu clave desde el [panel de comercio de Khipu](https://khipu.com).
+
+---
+
+## Requisitos
+
+- Node.js >= 18
+
+## Licencia
 
 MIT
