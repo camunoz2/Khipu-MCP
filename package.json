@@ -1,0 +1,37 @@
+{
+  "name": "khipu-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Khipu instant payments API",
+  "bin": {
+    "khipu-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist/",
+    "openapi.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.16.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "khipu",
+    "mcp",
+    "payments",
+    "chile",
+    "api"
+  ],
+  "license": "MIT"
+}
